@@ -1,4 +1,6 @@
--- ==========================================
+
+vim.g.mapleader = " "
+
 -- 1. Escape with 'jj'
 -- ==========================================
 vim.keymap.set('i', 'jj', '<Esc>', { silent = true })
@@ -140,3 +142,125 @@ vim.opt.termguicolors = true
 -- File Explorer ; (shortcut = ee ) 
 -- ==========================================
 vim.keymap.set("n", "ee", ":Ex<CR>", { desc = "Open File Explorer" })
+
+
+--==========================================
+-- theme  for nvim 
+--==========================================
+
+vim.opt.termguicolors = true
+
+vim.api.nvim_set_hl(0, "Normal", { bg = "#191724", fg = "#e0def4" })
+vim.api.nvim_set_hl(0, "Comment", { fg = "#6e6a86", italic = true })
+vim.api.nvim_set_hl(0, "Statement", { fg = "#ebbcba", bold = true })
+vim.api.nvim_set_hl(0, "String", { fg = "#f6c177" })
+vim.api.nvim_set_hl(0, "Function", { fg = "#9ccfd8" })
+
+
+
+
+--- ==========================================
+-- Neovim Configuration (Sidebar & Tabs)
+-- ==========================================
+
+-- Enable tabline at the top
+vim.opt.showtabline = 2
+
+-- Custom Tabline styling
+function MyTabLine()
+    local s = ""
+    for i = 1, vim.fn.tabpagenr('$') do
+        if i == vim.fn.tabpagenr() then
+            s = s .. "%#TabLineSel#"
+        else
+            s = s .. "%#TabLine#"
+        end
+        
+        local buflist = vim.fn.tabpagebuflist(i)
+        local winnr = vim.fn.tabpagewinnr(i)
+        local bufnr = buflist[winnr]
+        local file = vim.api.nvim_buf_get_name(bufnr)
+        local filename = file ~= "" and file:match("([^/]+)$") or "[No Name]"
+        
+        s = s .. " " .. i .. ":" .. filename .. " "
+    end
+    s = s .. "%#TabLineFill#"
+    return s
+end
+
+vim.o.tabline = "%!v:lua.MyTabLine()"
+
+-- Quick tab switching with Alt + Number (Alt+1, Alt+2, etc.)
+for i = 1, 9 do
+    vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { silent = true })
+end
+
+-- ==========================================
+-- Sidebar Configuration
+-- ==========================================
+local sidebar_buf = nil
+local sidebar_win = nil
+
+local function toggle_sidebar()
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+        vim.api.nvim_win_close(sidebar_win, true)
+        sidebar_win = nil
+        return
+    end
+
+    sidebar_buf = vim.api.nvim_create_buf(false, true)
+    
+    vim.bo[sidebar_buf].buftype = "nofile"
+    vim.bo[sidebar_buf].bufhidden = "wipe"
+    vim.bo[sidebar_buf].swapfile = false
+
+    local menu_items = {
+        "   >>>>  Sidebar <<<<",
+        "  > [1] File Explorer",
+        "  > [2] New Tab      ",
+        "  --------------------",
+    }
+
+    vim.api.nvim_buf_set_lines(sidebar_buf, 0, -1, false, menu_items)
+
+    vim.keymap.set("n", "<CR>", function()
+        local current_line = vim.api.nvim_get_current_line()
+        
+        vim.cmd("wincmd l")
+
+        if current_line:find("1") then
+            vim.cmd("Ex")
+        elseif current_line:find("2") then
+            vim.cmd("tabnew")
+        end
+    end, { buffer = sidebar_buf, silent = true })
+
+    vim.cmd("topleft vsplit")
+    sidebar_win = vim.api.nvim_get_current_win()
+    
+    vim.api.nvim_win_set_buf(sidebar_win, sidebar_buf)
+    vim.cmd("vertical resize 30")
+    
+    vim.wo[sidebar_win].number = false
+    vim.wo[sidebar_win].relativenumber = false
+    vim.wo[sidebar_win].signcolumn = "no"
+    vim.wo[sidebar_win].cursorline = true
+end
+
+-- Commands
+vim.api.nvim_create_user_command("Bar", function()
+    if not (sidebar_win and vim.api.nvim_win_is_valid(sidebar_win)) then
+        toggle_sidebar()
+    end
+end, {})
+
+vim.api.nvim_create_user_command("Cbar", function()
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+        vim.api.nvim_win_close(sidebar_win, true)
+        sidebar_win = nil
+    end
+end, {})
+
+-- Keymaps as requested:
+vim.keymap.set("n", "<leader>t", toggle_sidebar, { silent = true })   -- Open sidebar with Space + t
+vim.keymap.set("n", "<leader>tc", ":CloseBar<CR>", { silent = true }) -- Close sidebar with Space + t + c- ==========================================
