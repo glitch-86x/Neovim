@@ -112,7 +112,7 @@ vim.keymap.set("n", "fj", "f", { desc = "Jump forward" })
 vim.keymap.set("n", "fJ", "F", { desc = "Jump backward" })
 
 
-- ==========================================
--- 4. Color to Code (Always On)
+-- =========================================- 
+--4. Color to Code (Always On)
 -- ==========================================
 vim.opt.termguicolors = true
