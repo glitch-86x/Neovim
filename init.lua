@@ -80,6 +80,7 @@ vim.keymap.set("n", "<leader>cd", ":Dir<CR>", { silent = true })
 
 
 
+
 -- ==========================================
 -- 1. Simple Terminal (Shortcut: ft = fast terminal ) 
 -- ==========================================
@@ -105,14 +106,37 @@ end, {})
 vim.keymap.set("n", "ff", ":SmartSub<CR>", { silent = true })
 
 
--- ==========================================
---- 3. Match & Jump (Shortcut: fj) 
--- ==========================================
-vim.keymap.set("n", "fj", "f", { desc = "Jump forward" })
-vim.keymap.set("n", "fJ", "F", { desc = "Jump backward" })
-
-
--- =========================================- 
---4. Color to Code (Always On)
--- ==========================================
 vim.opt.termguicolors = true
+
+-- ==========================================
+-- ==========================================
+-- 1. Simple Terminal (Shortcut: ft = fast terminal ) 
+-- ==========================================
+vim.keymap.set("n", "ft", ":split term://bash<CR>", { silent = true })
+
+vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { silent = true })
+
+
+-- ==========================================
+-- 2. Smart Substitution (Shortcut: ff = fast find )
+-- ==========================================
+vim.api.nvim_create_user_command("SmartSub", function()
+    vim.ui.input({ prompt = "Replace what? : " }, function(old_word)
+        if not old_word or old_word == "" then return end
+        vim.ui.input({ prompt = "Replace '" .. old_word .. "' with : " }, function(new_word)
+            if not new_word then return end
+            local cmd = string.format("%%s/%s/%s/gc", old_word, new_word)
+            vim.cmd(cmd)
+        end)
+    end)
+end, {})
+
+vim.keymap.set("n", "ff", ":SmartSub<CR>", { silent = true })
+
+
+vim.opt.termguicolors = true
+
+-- ==========================================
+-- File Explorer ; (shortcut = ee ) 
+-- ==========================================
+vim.keymap.set("n", "ee", ":Ex<CR>", { desc = "Open File Explorer" })
