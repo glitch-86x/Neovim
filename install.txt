@@ -1,0 +1,34 @@
+HI that is my neovim plugin and edit version if you want to install you must follow ;
+
+-- install on Debian or base distro ;  
+
+	sudo apt install neovim
+
+-- install on fedora or base distro ;
+ 
+	sudo dnf install  neovim
+
+-- install on arch or base distro ; 
+
+	sudo packman -S neovim
+
+-- install on gentoo or base distro  ; 
+
+	sudo emerge -a app-editors/neovim
+
+-- install on slackware or base distro ;
+
+	see https://slackbuilds.org/repository/14.2/development/neovim/ 
+                                               ||
+					       ||
+				   see the last version of slackware 
+
+-- install on freebsd or base distro ; 
+
+	pkg install neovim
+
+-- or if you use another os like lfs or something else compile neovim from source
+
+  the URL =  https://github.com/neovim/neovim
+
+                                                                    thank for read and use my plug-in :)
