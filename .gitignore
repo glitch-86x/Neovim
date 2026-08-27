@@ -1,1 +1,5 @@
-lua/;JJ
+lua/
+*.out
+*.c
+*.ass
+file.txt
