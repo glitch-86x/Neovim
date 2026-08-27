@@ -31,4 +31,49 @@ HI that is my neovim plugin and edit version if you want to install you must fol
 
   the URL =  https://github.com/neovim/neovim
 
+ -- after you install nvim make a dir ;
+
+ 	mkdir /.config/nvim/
+
+ -- enter the dir ;
+
+ 	cd /.config/nvim 
+
+ -- here you can make a dir for plug-in and one for basic command like this ;
+
+
+ 	/home/user
+	  |
+	  |
+	  \
+	   \ = /.config/
+	          ||
+		  ||
+		  / \
+		 /   \
+		/     \ 
+	       /       \ 
+	/nvim/       /plugin/
+	  ||            \\
+	  ||             \\
+	  ||              \\
+	  ||               \\
+	  ||                \\
+	  ||                 {"here you can 
+	  ||                  make big plug in like lsp or ai auto-complete"}
+	  ||
+	  ||
+	  ||
+	  ||
+	init.lua
+	  ||
+	  ||
+	  ||
+	{"that conten 
+	the basic thing 
+	like my ff = fast
+	find you can write 
+	you own easy 
+	plugin here"}                                                     from a solo dev "glitch86x"
                                                                     thank for read and use my plug-in :)
+								     support free open-source software :)
