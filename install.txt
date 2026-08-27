@@ -42,17 +42,16 @@ HI that is my neovim plugin and edit version if you want to install you must fol
  -- here you can make a dir for plug-in and one for basic command like this ;
 
 
- 	/home/user
-	  |
-	  |
-	  \
-	   \ = /.config/
-	          ||
+/home/user
+ |
+  \
+   \ = /.config/
+	      ||
 		  ||
 		  / \
 		 /   \
 		/     \ 
-	       /       \ 
+       /        \ 
 	/nvim/       /plugin/
 	  ||            \\
 	  ||             \\
