@@ -10,7 +10,7 @@ HI that is my neovim plugin and edit version if you want to install you must fol
 
 -- install on arch or base distro ; 
 
-	sudo packman -S neovim
+	sudo pacman -S neovim
 
 -- install on gentoo or base distro  ; 
 
