@@ -23,6 +23,14 @@ HI that is my neovim plugin and edit version if you want to install you must fol
 					       ||
 				   see the last version of slackware 
 
+-- install on opensuse or base distro ; 
+
+
+sudo zypper addrepo https://download.opensuse.org/repositories/editors/openSUSE_Tumbleweed/editors.repo
+sudo zypper refresh
+sudo zypper install neovim
+
+
 -- install on freebsd or base distro ; 
 
 	pkg install neovim
