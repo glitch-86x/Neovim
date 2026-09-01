@@ -43,6 +43,8 @@ end, {})
 vim.keymap.set("n", "<leader>f", ":File<CR>", { silent = true })
 
 
+vim.opt.number = true
+vim.opt.relativenumber = true   
 -- ==========================================
 -- 3. Directory Switcher Command (:Dir) - Enhanced
 -- ==========================================
