@@ -158,7 +158,31 @@ vim.api.nvim_set_hl(0, "Function", { fg = "#9ccfd8" })
 
 
 
+-- Load the plugin using Neovim's built-in package manager
+vim.cmd('packadd rose-pine')
 
+-- (Optional) Configure Rose Pine variants and options
+require('rose-pine').setup({
+    variant = 'main',      -- 'main' (default), 'moon', or 'dawn'
+    dark_variant = 'main', -- 'main', 'moon', or 'dawn'
+    dim_inactive_windows = false,
+    extend_background_behind_borders = true,
+
+    enable = {
+        terminal = true,
+        legacy_highlights = true, -- Improves compatibility with older plugins
+        migrations = true,
+    },
+
+    styles = {
+        bold = true,
+        italic = true,
+        transparency = false, -- Set to true to remove background
+    },
+})
+
+-- Apply the colorscheme
+vim.cmd.colorscheme('rose-pine')
 --- ==========================================
 -- Neovim Configuration (Sidebar & Tabs)
 -- ==========================================
