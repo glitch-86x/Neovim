@@ -290,3 +290,200 @@ end, {})
 -- Keymaps as requested:
 vim.keymap.set("n", "<leader>t", toggle_sidebar, { silent = true })   -- Open sidebar with Space + t
 vim.keymap.set("n", "<leader>tc", ":CloseBar<CR>", { silent = true }) -- Close sidebar with Space + t + c- ==========================================
+local M = {}
+local buf_id, win_id = nil, nil
+
+-- تتبع حالة المجلدات (مفتوحة أم مغلقة)
+local open_folders = {
+    ["."] = true,
+}
+
+-- جدول شامل لأشهر الامتدادات وأيقوناتها
+local icons = {
+    lua  = "󰢱 ",
+    py   = "󰌠 ",
+    js   = "󰌞 ",
+    jsx  = "󰌞 ",
+    ts   = "󰛦 ",
+    tsx  = "󰛦 ",
+    c    = "󰙱 ",
+    h    = "󰙲 ",
+    cpp  = "󰙲 ",
+    hpp  = "󰙲 ",
+    java = "󰬷 ",
+    rs   = "󱘗 ",
+    go   = "󰟓 ",
+    rb   = "󰴭 ",
+    php  = "󰌭 ",
+    cs   = "󰌛 ",
+    swift = "󰛥 ",
+    kt   = "󰌱 ",
+    scala = "󰴩 ",
+    r    = "󰟔 ",
+    dart = "󰎙 ",
+    sh   = "󰞷 ",
+    bash = "󰞷 ",
+    zsh  = "󰞷 ",
+    sql  = "󰆆 ",
+    html = "󰌝 ",
+    htm  = "󰌝 ",
+    css  = "󰌜 ",
+    scss = "󰌜 ",
+    less = "󰌜 ",
+    json = "󰘦 ",
+    yaml = "󰅴 ",
+    yml  = "󰅴 ",
+    xml  = "󰅴 ",
+    toml = "󰅴 ",
+    md   = "󰍔 ",
+    txt  = "󰈙 ",
+    pdf  = "󰈦 ",
+    zip  = "󰛫 ",
+    tar  = "󰛫 ",
+    gz   = "󰛫 ",
+    Makefile = " ",
+    dockerfile = "󰡨 ",
+}
+
+-- دالة لجلب الملفات والمجلدات بطريقة تفاعلية
+local function get_files()
+    local handle = io.popen("find . -not -path '*/.*' -not -path '.'")
+    if not handle then return {} end
+    local list = {}
+    
+    for line in handle:lines() do
+        local clean = line:gsub("^%./", "")
+        if clean ~= "" then
+            local parent_dir = clean:match("^(.-)/[^/]+$")
+            if not parent_dir or open_folders[parent_dir] then
+                table.insert(list, clean)
+            end
+        end
+    end
+    handle:close()
+    table.sort(list)
+    return list
+end
+
+-- تعبئة الشاشة بالأيقونات الشاملة
+local function populate_buffer(b)
+    local files = get_files()
+    local lines = { "  󰉋 ." }
+
+    for _, f in ipairs(files) do
+        local icon = "󰈙 "
+        local is_dir = vim.fn.isdirectory(f) == 1
+        local basename = f:match("([^/]+)$")
+
+        if is_dir then
+            local arrow = open_folders[f] and " " or " "
+            icon = arrow .. "󰉋 "
+        elseif icons[basename] then
+            icon = icons[basename] .. " "
+        else
+            local ext = f:match("^.+(%..+)$")
+            if ext then
+                ext = ext:sub(2)
+                icon = (icons[ext] or "󰈙 ") .. " "
+            else
+                icon = "  " .. icon
+            end
+        end
+
+        local _, count = f:gsub("/", "/")
+        local indent = string.rep("  ", count + 1)
+
+        table.insert(lines, indent .. icon .. basename)
+    end
+
+    vim.api.nvim_buf_set_option(b, "modifiable", true)
+    vim.api.nvim_buf_set_lines(b, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(b, "modifiable", false)
+end
+
+-- معالجة الحدث (سواء عبر الضغط على Enter أو النقر بالماوس)
+local function handle_selection()
+    local line = vim.api.nvim_get_current_line()
+    
+    if line:match("󰉋") then
+        local dir_name = line:match("󰉋%s+(%S+)")
+        if dir_name and dir_name ~= "." then
+            open_folders[dir_name] = not open_folders[dir_name]
+            populate_buffer(buf_id)
+        end
+    else
+        local filename = line:gsub("^%s*[%W%w]-%s+", ""):gsub("^%s*", "")
+        if filename ~= "" then
+            local handle = io.popen("find . -name '" .. filename .. "' -not -path '*/.*'")
+            if handle then
+                local full_path = handle:read("*l")
+                handle:close()
+                if full_path then
+                    vim.cmd("wincmd l")
+                    vim.cmd("edit " .. full_path:gsub("^%./", ""))
+                end
+            end
+        end
+    end
+end
+
+-- فتح وإغلاق الشريط الجانبي
+function M.toggle()
+    if win_id and vim.api.nvim_win_is_valid(win_id) then
+        vim.api.nvim_win_close(win_id, true)
+        win_id, buf_id = nil, nil
+        return
+    end
+
+    buf_id = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_option(buf_id, "buftype", "nofile")
+    vim.api.nvim_buf_set_option(buf_id, "swapfile", false)
+    
+    populate_buffer(buf_id)
+
+    vim.cmd("topleft vsplit")
+    win_id = vim.api.nvim_get_current_win()
+    
+    vim.api.nvim_win_set_buf(win_id, buf_id)
+    vim.api.nvim_win_set_width(win_id, 30)
+    
+    vim.wo[win_id].winfixwidth = true
+    vim.wo[win_id].number = false            -- تم التصحيح هنا بنجاح
+    vim.wo[win_id].relativenumber = false
+    vim.wo[win_id].signcolumn = "no"
+
+    -- تفعيل لوحة المفاتيح والماوس
+    vim.api.nvim_buf_set_keymap(buf_id, "n", "<CR>", "", { noremap = true, silent = true, callback = handle_selection })
+    vim.api.nvim_buf_set_keymap(buf_id, "n", "<2-LeftMouse>", "", { noremap = true, silent = true, callback = handle_selection })
+
+    vim.api.nvim_buf_set_keymap(buf_id, "n", "<Right>", "", {
+        noremap = true, silent = true,
+        callback = function()
+            local line = vim.api.nvim_get_current_line()
+            if line:match("󰉋") then
+                local dir_name = line:match("󰉋%s+(%S+)")
+                if dir_name and dir_name ~= "." then
+                    open_folders[dir_name] = true
+                    populate_buffer(buf_id)
+                end
+            end
+        end
+    })
+
+    vim.api.nvim_buf_set_keymap(buf_id, "n", "<Left>", "", {
+        noremap = true, silent = true,
+        callback = function()
+            local line = vim.api.nvim_get_current_line()
+            if line:match("󰉋") then
+                local dir_name = line:match("󰉋%s+(%S+)")
+                if dir_name and dir_name ~= "." then
+                    open_folders[dir_name] = false
+                    populate_buffer(buf_id)
+                end
+            end
+        end
+    })
+end
+
+-- ربط الاختصار الأساسي (Leader + e)
+vim.keymap.set("n", "<leader>e", M.toggle, { silent = true, noremap = true })
