@@ -81,7 +81,6 @@ end
 
 vim.o.tabline = "%!v:lua.MyTabLine()"
 
--- Quick tab switching with Alt + Number (Alt+1, Alt+2, etc.)
 for i = 1, 9 do
     vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { silent = true })
 end
@@ -91,10 +90,7 @@ end
 -- ==========================================
 local M = {}
 local buf_id, win_id = nil, nil
-
-local open_folders = {
-    ["."] = true,
-}
+local open_folders = { ["."] = true }
 
 local icons = {
     lua  = "󰢱 ", py   = "󰌠 ", js   = "󰌞 ", jsx  = "󰌞 ",
@@ -114,7 +110,6 @@ local function get_files()
     local handle = io.popen("find . -not -path '*/.*' -not -path '.'")
     if not handle then return {} end
     local list = {}
-    
     for line in handle:lines() do
         local clean = line:gsub("^%./", "")
         if clean ~= "" then
@@ -155,7 +150,6 @@ local function populate_buffer(b)
 
         local _, count = f:gsub("/", "/")
         local indent = string.rep("  ", count + 1)
-
         table.insert(lines, indent .. icon .. basename)
     end
 
@@ -166,7 +160,6 @@ end
 
 local function handle_selection()
     local line = vim.api.nvim_get_current_line()
-    
     if line:match("󰉋") then
         local dir_name = line:match("󰉋%s+(%S+)")
         if dir_name and dir_name ~= "." then
@@ -215,34 +208,167 @@ function M.toggle()
 
     vim.api.nvim_buf_set_keymap(buf_id, "n", "<CR>", "", { noremap = true, silent = true, callback = handle_selection })
     vim.api.nvim_buf_set_keymap(buf_id, "n", "<2-LeftMouse>", "", { noremap = true, silent = true, callback = handle_selection })
-
-    vim.api.nvim_buf_set_keymap(buf_id, "n", "<Right>", "", {
-        noremap = true, silent = true,
-        callback = function()
-            local line = vim.api.nvim_get_current_line()
-            if line:match("󰉋") then
-                local dir_name = line:match("󰉋%s+(%S+)")
-                if dir_name and dir_name ~= "." then
-                    open_folders[dir_name] = true
-                    populate_buffer(buf_id)
-                end
-            end
-        end
-    })
-
-    vim.api.nvim_buf_set_keymap(buf_id, "n", "<Left>", "", {
-        noremap = true, silent = true,
-        callback = function()
-            local line = vim.api.nvim_get_current_line()
-            if line:match("󰉋") then
-                local dir_name = line:match("󰉋%s+(%S+)")
-                if dir_name and dir_name ~= "." then
-                    open_folders[dir_name] = false
-                    populate_buffer(buf_id)
-                end
-            end
-        end
-    })
 end
 
 vim.keymap.set("n", "<leader>e", M.toggle, { silent = true, noremap = true })
+
+-- ==========================================
+-- Clean Custom Key Reader Manager (Strict Filter)
+-- ==========================================
+local function show_interactive_menu()
+    local buf = vim.api.nvim_create_buf(false, true)
+    
+    local width = 40
+    local height = 7
+    local opts = {
+        style = "minimal",
+        relative = "editor",
+        width = width,
+        height = height,
+        row = math.floor((vim.o.lines - height) / 2),
+        col = math.floor((vim.o.columns - width) / 2),
+        border = "rounded",
+    }
+
+    local win = vim.api.nvim_open_win(buf, true, opts)
+
+    local lines = {
+        " === Keybinding Manager ===",
+        " 1. Add Key",
+        " 2. Remove Key",
+        " 3. Show  Keys",
+        " 4. Close Menu",
+    }
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+    local function close_menu()
+        if vim.api.nvim_win_is_valid(win) then
+            vim.api.nvim_win_close(win, true)
+        end
+    end
+
+    local function add_new_keybinding()
+        close_menu()
+        vim.ui.input({ prompt = "What it does : " }, function(action_name)
+            if not action_name or action_name == "" then return end
+            vim.ui.input({ prompt = "The key : " }, function(key_name)
+                if not key_name or key_name == "" then return end
+                
+                local init_path = vim.fn.stdpath("config") .. "/init.lua"
+                local file = io.open(init_path, "a")
+                if file then
+                    file:write("\n-- NOTE_KEY3: " .. key_name .. " -> " .. action_name)
+                    file:close()
+                    print("Saved successfully!")
+                end
+            end)
+        end)
+    end
+
+    local function remove_keybinding()
+        close_menu()
+        vim.ui.input({ prompt = "Enter key to remove: " }, function(key_name)
+            if not key_name or key_name == "" then return end
+            
+            local init_path = vim.fn.stdpath("config") .. "/init.lua"
+            local file = io.open(init_path, "r")
+            if not file then return end
+            
+            local content = file:read("*a")
+            file:close()
+            
+            local new_content = ""
+            for line in content:gmatch("[^\r\n]+") do
+                if not line:match("NOTE_KEY3: " .. key_name .. " %->") then
+                    new_content = new_content .. line .. "\n"
+                end
+            end
+            
+            file = io.open(init_path, "w")
+            if file then
+                file:write(new_content)
+                file:close()
+                print("Key removed successfully!")
+            end
+        end)
+    end
+
+    local function show_added_keys()
+        close_menu()
+        local init_path = vim.fn.stdpath("config") .. "/init.lua"
+        local file = io.open(init_path, "r")
+        local custom_keys = { " === Your Added Keys ===", "" }
+        
+        if file then
+            for line in file:lines() do
+                -- الفلترة المشددة: تجاهل أي سطر يحتوي على كود برمجي أو غير مصنف كـ NOTE_KEY3 حقيقي
+                if line:match("%-%- NOTE_KEY3:") and not line:match("file:write") then
+                    local clean_text = line:gsub("%-%- NOTE_KEY3: ", "")
+                    table.insert(custom_keys, " • " .. clean_text)
+                end
+            end
+            file:close()
+        end
+
+        if #custom_keys <= 2 then
+            table.insert(custom_keys, " No custom keys found.")
+        end
+
+        local b = vim.api.nvim_create_buf(false, true)
+        vim.api.nvim_buf_set_lines(b, 0, -1, false, custom_keys)
+        
+        local w_width = 45
+        local w_height = math.min(#custom_keys + 2, 15)
+        local w_opts = {
+            style = "minimal",
+            relative = "editor",
+            width = w_width,
+            height = w_height,
+            row = math.floor((vim.o.lines - w_height) / 2),
+            col = math.floor((vim.o.columns - w_width) / 2),
+            border = "rounded",
+        }
+        local w = vim.api.nvim_open_win(b, true, w_opts)
+        vim.keymap.set('n', 'q', function() vim.api.nvim_win_close(w, true) end, { buffer = b })
+        vim.keymap.set('n', '<Esc>', function() vim.api.nvim_win_close(w, true) end, { buffer = b })
+    end
+
+    local function execute_action(action_num)
+        if action_num == 1 then
+            add_new_keybinding()
+        elseif action_num == 2 then
+            remove_keybinding()
+        elseif action_num == 3 then
+            show_added_keys()
+        else
+            close_menu()
+        end
+    end
+
+    vim.keymap.set('n', '1', function() execute_action(1) end, { buffer = buf })
+    vim.keymap.set('n', '2', function() execute_action(2) end, { buffer = buf })
+    vim.keymap.set('n', '3', function() execute_action(3) end, { buffer = buf })
+    vim.keymap.set('n', '4', close_menu, { buffer = buf })
+    
+    vim.keymap.set('n', '<CR>', function()
+        local cursor_row = vim.api.nvim_win_get_cursor(win)[1]
+        if cursor_row >= 2 and cursor_row <= 5 then
+            execute_action(cursor_row - 1)
+        else
+            close_menu()
+        end
+    end, { buffer = buf })
+
+    vim.keymap.set('n', 'q', close_menu, { buffer = buf })
+    vim.keymap.set('n', '<Esc>', close_menu, { buffer = buf })
+end
+
+vim.keymap.set('n', 'wh', show_interactive_menu, { silent = true })
+vim.keymap.set('n', '<F2>', show_interactive_menu, { silent = true })
+
+
+-- NOTE_KEY3: jj -> enter to normal mode
+
+-- NOTE_KEY3: ff -> fast find
+
+-- NOTE_KEY3: ft -> fast terminal
