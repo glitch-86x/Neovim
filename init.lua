@@ -372,3 +372,95 @@ vim.keymap.set('n', '<F2>', show_interactive_menu, { silent = true })
 -- NOTE_KEY3: ff -> fast find
 
 -- NOTE_KEY3: ft -> fast terminal
+-- NOTE_KEY3: wh -> show the key menu
+-- NOTE_KEY3: leader + e -> open the file tree
+
+-- ==========================================
+-- Neovim Welcome Dashboard (Fixed & Interactive)
+-- ==========================================
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    -- Show only if no files are passed as arguments
+    if vim.fn.argc() == 0 then
+      local lines = {
+        "",
+        "  ███╗   ██╗ ███████╗  ██████╗ ██╗   ██╗██╗███╗   ███╗",
+        "  ████╗  ██║ ██╔════╝ ██╔═══██╗██║   ██║██║████╗ ████║",
+        "  ██╔██╗ ██║ █████╗   ██║   ██║██║   ██║██║██╔████╔██║",
+        "  ██║╚██╗██║ ██╔══╝   ██║   ██║╚██╗ ██╔╝██║██║╚██╔╝██║",
+        "  ██║ ╚████║ ███████╗ ╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║",
+        "  ╚═╝  ╚═══╝ ╚══════╝  ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝",
+        "",
+      }
+
+      local buf = vim.api.nvim_create_buf(false, true)
+      
+      -- 1. Calculate dimensions for perfect centering
+      local width = 0
+      for _, line in ipairs(lines) do
+        local line_width = vim.fn.strdisplaywidth(line)
+        if line_width > width then width = line_width end
+      end
+      
+      local height = #lines
+      local left_padding = math.floor((vim.o.columns - width) / 2)
+      local top_padding = math.floor((vim.o.lines - height) / 2) - 2 
+      
+      -- 2. Apply padding to center the text
+      local padded_lines = {}
+      local padding_str = string.rep(" ", left_padding > 0 and left_padding or 0)
+      
+      for _, line in ipairs(lines) do
+        table.insert(padded_lines, padding_str .. line)
+      end
+      
+      for i = 1, top_padding > 0 and top_padding or 0 do
+        table.insert(padded_lines, 1, "")
+      end
+
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, padded_lines)
+      
+      -- 3. Buffer options
+      vim.bo[buf].modifiable = false
+      vim.bo[buf].buftype = "nofile"
+      vim.bo[buf].bufhidden = "wipe" 
+
+      vim.api.nvim_win_set_buf(0, buf)
+      
+      -- 4. Setup Highlights (Colors)
+      vim.api.nvim_set_hl(0, "NeovimLogo", { fg = "#9ece6a", bold = true }) 
+      vim.api.nvim_set_hl(0, "NeovimWelcomeText", { fg = "#7aa2f7", italic = true }) 
+      
+      local ns_id = vim.api.nvim_create_namespace("NeovimWelcome")
+      
+      for i = 1, 6 do 
+         vim.api.nvim_buf_add_highlight(buf, ns_id, "NeovimLogo", i, 0, -1)
+      end
+      
+      vim.api.nvim_buf_add_highlight(buf, ns_id, "NeovimWelcomeText", 8, 0, -1)
+      vim.api.nvim_buf_add_highlight(buf, ns_id, "NeovimWelcomeText", 10, 0, -1)
+      vim.api.nvim_buf_add_highlight(buf, ns_id, "NeovimWelcomeText", 11, 0, -1) -- Hint line
+
+      -- ==========================================
+      -- 5. SMART EXIT MECHANISM (The Fix!)
+      -- ==========================================
+      local function exit_dashboard()
+          -- Force delete the dashboard buffer
+          vim.cmd('bdelete!')
+          -- Open a fresh, empty buffer for editing
+          vim.cmd('enew')
+      end
+
+      -- Map 'q' and '<Esc>' to close the dashboard
+      vim.keymap.set('n', 'q', exit_dashboard, { buffer = buf, silent = true })
+      vim.keymap.set('n', '<Esc>', exit_dashboard, { buffer = buf, silent = true })
+
+      -- Map all standard keys that trigger editing/insert mode to auto-close and edit
+      local insert_keys = { 'i', 'a', 'I', 'A', 'o', 'O', 's', 'S', 'c', 'C' }
+      for _, key in ipairs(insert_keys) do
+          vim.keymap.set('n', key, exit_dashboard, { buffer = buf, silent = true })
+      end
+
+    end
+  end,
+})
